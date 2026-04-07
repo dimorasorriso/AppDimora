@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Globe, 
   MapPin, 
@@ -18,6 +18,7 @@ import {
   Bus,
   ExternalLink,
   ChevronDown,
+  ChevronRight,
   Lock,
   Umbrella,
   CircleArrowDown,
@@ -92,6 +93,21 @@ const App: React.FC = () => {
     trash: false,
     windows: false
   });
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener('resize', checkScroll);
+    return () => window.removeEventListener('resize', checkScroll);
+  }, []);
 
   const handleCopy = (text: string, field: 'name' | 'pass') => {
     navigator.clipboard.writeText(text);
@@ -966,28 +982,45 @@ const App: React.FC = () => {
 
       {/* Pseudo Bottom Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-stone-200 p-3 z-50 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)]">
-        <div className="max-w-2xl mx-auto flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-2">
-          {data.sections.map(section => (
-            <button
-              key={section.id}
-              onClick={() => {
-                setActiveSectionId(section.id);
-                window.scrollTo({ top: 350, behavior: 'smooth' });
-              }}
-              className={`flex flex-col items-center justify-center min-w-[5.5rem] p-3 rounded-2xl transition-all shrink-0 ${
-                activeSectionId === section.id 
-                  ? 'bg-amber-800 text-white shadow-md scale-105' 
-                  : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'
-              }`}
-            >
-              <div className="mb-1.5">
-                {getIcon(section.icon)}
-              </div>
-              <span className="text-[9px] font-black uppercase tracking-wider text-center leading-tight w-full truncate px-1">
-                {section.title[lang]}
-              </span>
-            </button>
-          ))}
+        <div className="max-w-2xl mx-auto relative">
+          <div 
+            ref={scrollContainerRef}
+            onScroll={checkScroll}
+            className="flex gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] px-2"
+          >
+            {data.sections.map(section => (
+              <button
+                key={section.id}
+                onClick={() => {
+                  setActiveSectionId(section.id);
+                  window.scrollTo({ top: 350, behavior: 'smooth' });
+                }}
+                className={`flex flex-col items-center justify-center min-w-[5.5rem] p-3 rounded-2xl transition-all shrink-0 ${
+                  activeSectionId === section.id 
+                    ? 'bg-amber-800 text-white shadow-md scale-105' 
+                    : 'text-stone-500 hover:bg-stone-100 hover:text-stone-800'
+                }`}
+              >
+                <div className="mb-1.5">
+                  {getIcon(section.icon)}
+                </div>
+                <span className="text-[9px] font-black uppercase tracking-wider text-center leading-tight w-full truncate px-1">
+                  {section.title[lang]}
+                </span>
+              </button>
+            ))}
+          </div>
+          
+          {/* Right Scroll Indicator */}
+          <div 
+            className={`absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-white via-white/80 to-transparent pointer-events-none flex items-center justify-end pr-1 transition-opacity duration-300 ${
+              canScrollRight ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
+            <div className="w-6 h-6 rounded-full bg-white shadow-sm border border-stone-100 flex items-center justify-center text-amber-600 animate-pulse">
+              <ChevronRight className="w-4 h-4" />
+            </div>
+          </div>
         </div>
       </div>
     </div>
